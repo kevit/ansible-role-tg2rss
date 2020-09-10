@@ -1,0 +1,13 @@
+[Unit]
+Description=Telegram RSS Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Restart=always
+WorkingDirectory=/srv/TelegramRSS
+ExecStart=/usr/bin/php /srv/TelegramRSS/server.php
+
+[Install]
+WantedBy=multi-user.target

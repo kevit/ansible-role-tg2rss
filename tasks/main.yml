@@ -1,0 +1,122 @@
+---
+- name: install packages
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop:
+    - gpg
+    - git
+    - apt-transport-https
+    - nginx
+
+- name: check out Telegram API Server
+  git:
+    repo: 'https://github.com/xtrime-ru/TelegramApiServer.git'
+    dest: /srv/TelegramApiServer
+    version: master
+- name: check out Telegram RSS
+  git:
+    repo: 'https://github.com/xtrime-ru/TelegramRSS.git'
+    dest: /srv/TelegramRSS
+    version: master
+
+- name: Add the user
+  user:
+    name: rss2tg
+    shell: /usr/bin/nologin
+    home: /srv/TelegramRSS
+
+
+- name: Install sury key
+  apt_key:
+    url: 'https://packages.sury.org/php/apt.gpg'
+    state: present
+
+- name: Add sury repositories
+  apt_repository:
+    repo: "deb https://packages.sury.org/php/ buster main"
+    state: present
+    update_cache: yes
+    filename: 'sury'
+
+- name: install php dependencies
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop:
+    - php7.4
+    - php7.4-dev 
+    - php7.4-xml 
+    - php7.4-zip 
+    - php7.4-gmp 
+    - php7.4-cli 
+    - php7.4-mbstring 
+    - php7.4-json 
+
+- name: pecl install
+  shell: echo "\n\n\n\n\n\n\n\n\n" |pecl install swoole
+
+- name: create module definition
+  command: echo "extension=swoole.so" > /etc/php/7.4/mods-available/swoole.ini
+  args:
+   chdir: /etc/php/7.4/mods-available
+   creates: /etc/php/7.4/mods-available/swoole.ini
+
+- name: enable module
+  command: phpenmod swoole
+
+- name: install composer
+  include_role:
+    name: geerlingguy.composer
+
+- name: install composer API server dependencies
+  composer:
+    command: install
+    working_dir: /srv/TelegramApiServer
+- name: install composer RSS server dependencies
+  composer:
+    command: install
+    working_dir: /srv/TelegramRSS
+
+- name: Generating Telegram API  systemd config files
+  template: 
+     src: TelegramAPI.service.j2
+     dest: /etc/systemd/system/TelegramAPI.service
+- name: Generating Telegram RSS systemd config files
+  template: 
+     src: TelegramRSS.service.j2
+     dest: /etc/systemd/system/TelegramRSS.service
+
+- name: enable service and ensure it is not masked
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    masked: no
+  loop:
+    - TelegramAPI
+    - TelegramRSS
+
+- name: restart service
+  service: 
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - TelegramAPI
+    - TelegramRSS
+
+
+- name: Create nginx vhost config
+  template:
+    src: tg2rss.conf.j2
+    dest: /etc/nginx/sites-enabled/tg2rss.conf
+- name: Remove default nginx configuration
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+- name: reload service nginx
+  become: true
+  systemd:
+    name: nginx
+    state: reloaded

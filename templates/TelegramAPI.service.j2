@@ -1,0 +1,13 @@
+[Unit]
+Description=Telegram API Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Restart=always
+WorkingDirectory=/srv/TelegramApiServer
+ExecStart=/usr/bin/php /srv/TelegramApiServer/server.php --session=session
+
+[Install]
+WantedBy=multi-user.target
