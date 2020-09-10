@@ -57,9 +57,11 @@
 
 - name: pecl install
   shell: echo "\n\n\n\n\n\n\n\n\n" |pecl install swoole
+  args:
+   creates: /usr/share/php/docs/swoole
 
 - name: create module definition
-  command: echo "extension=swoole.so" > /etc/php/7.4/mods-available/swoole.ini
+  shell: echo "extension=swoole.so" > /etc/php/7.4/mods-available/swoole.ini
   args:
    chdir: /etc/php/7.4/mods-available
    creates: /etc/php/7.4/mods-available/swoole.ini
