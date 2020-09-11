@@ -82,6 +82,15 @@
     command: install
     working_dir: /srv/TelegramRSS
 
+- name: prepare Telegram API configuration
+  template:
+    src: TelegramApi.env.j2
+    dest: /srv/TelegramApiServer/.env
+- name: prepare Telegram RSS configuration
+  template:
+    src: TelegramRSS.env.j2
+    dest: /srv/TelegramRSS/.env
+
 - name: Generating Telegram API  systemd config files
   template: 
      src: TelegramAPI.service.j2
